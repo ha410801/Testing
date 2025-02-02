@@ -61,11 +61,12 @@ jobs:
     - name: Check remote
       run: git remote -v
     
-    # Commit APK to the repository
-    - name: Commit APK to repository
+    # Set up Git credentials and push using the secret token directly
+    - name: Set up Git credentials
       run: |
         git config --global user.name "ha410801"
         git config --global user.email "ha410801@gmail.com"
+        git remote set-url origin https://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@github.com/ha410801/Testing.git
         git add APK_BUILDS/app-release.apk
         git commit -m "Add new APK build"
         git push origin flutter
