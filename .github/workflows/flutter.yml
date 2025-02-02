@@ -60,6 +60,21 @@ jobs:
     # Debugging (optional)
     - name: Check remote
       run: git remote -v
+
+    # Set up SSH for EC2
+    - name: Set up SSH key
+      run: |
+        echo "$EC2_SSH_PRIVATE_KEY" > private_key.pem
+        chmod 600 private_key.pem
+      env:
+        EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+
+    # Transfer APK to EC2 using SCP
+    - name: Transfer APK to EC2 Server
+      run: |
+        scp -i private_key.pem APK_BUILDS/app-release.apk ubuntu@ip-172-31-88-199:/home/ubuntu/my_flutter_app/my_app
+      env:
+        EC2_SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
     
 
 
