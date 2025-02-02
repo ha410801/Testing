@@ -15,21 +15,39 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
+    # Cache Flutter dependencies
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v2
+      with:
+        path: ~/.pub-cache
+        key: ${{ runner.os }}-flutter-dependencies-${{ hashFiles('**/pubspec.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-dependencies-
+
     # Set up Flutter SDK
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.16.0'
 
-    # Install dependencies
+    # Install dependencies (this step will be skipped if the cache is hit)
     - name: Install dependencies
       run: flutter pub get
+
+    # Cache build outputs (APK)
+    - name: Cache APK Build
+      uses: actions/cache@v2
+      with:
+        path: build/app/outputs/flutter-apk
+        key: ${{ runner.os }}-flutter-apk-${{ hashFiles('**/lib/**/*.dart') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-apk-
 
     # Run tests (optional)
     - name: Run tests
       run: flutter test
 
-    # Build APK
+    # Build APK (this will be skipped if the cache is hit)
     - name: Build APK
       run: flutter build apk --release
 
@@ -38,15 +56,15 @@ jobs:
       run: |
         mkdir -p APK_BUILDS
         mv build/app/outputs/flutter-apk/app-release.apk APK_BUILDS/
-      
+
     # Set up Git credentials
     - name: Set up Git credentials
       run: |
         git config --global user.name "GitHub Actions"
         git config --global user.email "actions@github.com"
-        git remote set-url origin https://github.com/ha410801/Testing.git flutter
+        git remote set-url origin https://$GH_TOKEN@github.com/ha410801/Testing.git
         
-    # Debugging
+    # Debugging (optional)
     - name: Check remote
       run: git remote -v
 
