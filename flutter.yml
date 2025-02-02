@@ -1,0 +1,48 @@
+name: Flutter APK Build
+
+on:
+  push:
+    branches:
+      - flutter  # Trigger only for changes in the flutter branch
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    # Set up Flutter SDK
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'  # specify the Flutter version
+
+    # Install dependencies
+    - name: Install dependencies
+      run: flutter pub get
+
+    # Run tests (optional)
+    - name: Run tests
+      run: flutter test
+
+    # Build APK
+    - name: Build APK
+      run: flutter build apk --release
+
+    # Upload APK to GitHub folder "APK BUILDS"
+    - name: Upload APK to APK BUILDS folder
+      run: |
+        mkdir -p APK_BUILDS
+        mv build/app/outputs/flutter-apk/app-release.apk APK_BUILDS/
+      
+    # Commit APK to the repository
+    - name: Commit APK to repository
+      run: |
+        git config --global user.name "GitHub Actions"
+        git config --global user.email "actions@github.com"
+        git add APK_BUILDS/app-release.apk
+        git commit -m "Add new APK build"
+        git push
