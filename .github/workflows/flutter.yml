@@ -56,13 +56,6 @@ jobs:
       run: |
         mkdir -p APK_BUILDS
         mv build/app/outputs/flutter-apk/app-release.apk APK_BUILDS/
-
-    # Set up Git credentials (COMMENTED OUT)
-    # - name: Set up Git credentials
-    #   run: |
-    #     git config --global user.name "GitHub Actions"
-    #     git config --global user.email "actions@github.com"
-    #     git push https://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@github.com/ha410801/Testing.git flutter
         
     # Debugging (optional)
     - name: Check remote
