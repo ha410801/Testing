@@ -65,7 +65,7 @@ jobs:
     - name: Commit APK to repository
       run: |
         git config --global user.name "ha410801"
-        git config --global user.email "ha410801#gmail.com"
+        git config --global user.email "ha410801@gmail.com"
         git add APK_BUILDS/app-release.apk
         git commit -m "Add new APK build"
         git push origin flutter
