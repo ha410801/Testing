@@ -64,7 +64,7 @@ support for customizing or creating entirely new visual components.
 
 <p align="center"><img src="https://github.com/flutter/website/blob/main/src/assets/images/docs/homepage/reflectly-hero-600px.png?raw=true" alt="Reflectly hero image"></p>
 
-### Fast results
+### Fast resultsssss
 
 Flutter is fast. It's powered by the same hardware-accelerated 2D graphics
 library that underpins Chrome and Android: [Skia]. We architected Flutter to
