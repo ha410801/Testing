@@ -23,7 +23,7 @@ jobs:
         key: ${{ runner.os }}-flutter-dependencies-${{ hashFiles('**/pubspec.yaml') }}
         restore-keys: |
           ${{ runner.os }}-flutter-dependencies-
-          
+    
     # Set up Flutter SDK
     - name: Set up Flutter
       uses: subosito/flutter-action@v2
@@ -45,20 +45,24 @@ jobs:
         sed -i "s/version:.*/version: $NEW_VERSION/" pubspec.yaml
         echo "NEW_VERSION=$NEW_VERSION" >> $GITHUB_ENV
         echo "Build Version: $NEW_VERSION"
-        
-        # Commit updated version to repo (using the personal access token)
+    
+    # Commit updated version to repo (using the personal access token)
+    - name: Commit version change
+      run: |
         git config --global user.email "github-actions@github.com"
         git config --global user.name "GitHub Actions"
-        git remote set-url origin https://github-actions:${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}@github.com/${{ github.repository }}.git
+        git remote set-url origin https://github.com/${{ github.repository }}
         git add pubspec.yaml
         git commit -m "Auto-increment build version to $NEW_VERSION"
-        git push origin flutter
+        git push https://github.com/${{ github.repository }} HEAD:${{ github.ref }} 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}  # Use the PAT for pushing changes
 
     # Build APK
     - name: Build APK
       run: flutter build apk --debug
 
-    # Rename APK with Version
+    # Rename APK with versioning
     - name: Rename APK with Version
       run: mv build/app/outputs/flutter-apk/app-debug.apk "build/app/outputs/flutter-apk/app-v${{ env.NEW_VERSION }}.apk"
 
@@ -69,12 +73,12 @@ jobs:
         echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/github-actions-key
         chmod 600 ~/.ssh/github-actions-key
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
-        
+
     # Create Folder on EC2
     - name: Create Folder on EC2
       run: |
         ssh -i ~/.ssh/github-actions-key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/haider/builds"
-        
+
     # Transfer APK to EC2 Server with versioning
     - name: Transfer APK to EC2 Server
       run: |
