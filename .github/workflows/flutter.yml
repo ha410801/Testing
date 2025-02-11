@@ -1,25 +1,82 @@
-name: Deploy to EC2
+name: Flutter APK Build
 
 on:
   push:
     branches:
-      - flutter  # Change to your desired branch
+      - flutter  # Trigger only for changes in the flutter branch
+  workflow_dispatch:  # Allow manual triggering of the workflow
 
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+    # Checkout the code
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Setup SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/github-actions-key  # Use the correct key name
-          chmod 600 ~/.ssh/github-actions-key  # Set correct permissions
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+    # Cache Flutter dependencies
+    - name: Cache Flutter dependencies
+      uses: actions/cache@v2
+      with:
+        path: ~/.pub-cache
+        key: ${{ runner.os }}-flutter-dependencies-${{ hashFiles('**/pubspec.yaml') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-dependencies-
 
-      - name: Create Folder on EC2
-        run: |
-          ssh -i ~/.ssh/github-actions-key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/haider"
+    # Set up Flutter SDK
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+
+    # Install dependencies
+    - name: Install dependencies
+      run: flutter pub get
+
+    # Cache build outputs (APK)
+    - name: Cache APK Build
+      uses: actions/cache@v2
+      with:
+        path: build/app/outputs/flutter-apk
+        key: ${{ runner.os }}-flutter-apk-${{ hashFiles('**/lib/**/*.dart') }}
+        restore-keys: |
+          ${{ runner.os }}-flutter-apk-
+
+    # Run tests (optional)
+    - name: Run tests
+      run: flutter test
+
+    # Build APK
+    - name: Build APK
+      run: flutter build apk --debug
+
+    # Upload APK to GitHub folder "APK BUILDS"
+    - name: Upload APK to APK BUILDS folder
+      run: |
+        mkdir -p APK_BUILDS
+        mv build/app/outputs/flutter-apk/app-release.apk APK_BUILDS/
+
+    # Set up SSH for EC2
+    - name: Setup SSH Key
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/github-actions-key  # Use the correct key name
+        chmod 600 ~/.ssh/github-actions-key  # Set correct permissions
+        ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+      env:
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+
+    # Create Folder on EC2
+    - name: Create Folder on EC2
+      run: |
+        ssh -i ~/.ssh/github-actions-key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "mkdir -p /home/ubuntu/haider"
+      env:
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+
+    # Transfer APK to EC2 using SCP
+    - name: Transfer APK to EC2 Server
+      run: |
+        scp -i ~/.ssh/github-actions-key APK_BUILDS/app-release.apk ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/haider
+      env:
+        EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
