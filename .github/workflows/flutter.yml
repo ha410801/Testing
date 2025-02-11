@@ -13,11 +13,11 @@ jobs:
     steps:
     # Checkout the code
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     # Cache Flutter dependencies
     - name: Cache Flutter dependencies
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: ~/.pub-cache
         key: ${{ runner.os }}-flutter-dependencies-${{ hashFiles('**/pubspec.yaml') }}
@@ -36,7 +36,7 @@ jobs:
 
     # Cache build outputs (APK)
     - name: Cache APK Build
-      uses: actions/cache@v2
+      uses: actions/cache@v3
       with:
         path: build/app/outputs/flutter-apk
         key: ${{ runner.os }}-flutter-apk-${{ hashFiles('**/lib/**/*.dart') }}
@@ -47,22 +47,22 @@ jobs:
     - name: Run tests
       run: flutter test
 
-    # Build APK
+    # Build APK (ensure correct APK output name)
     - name: Build APK
-      run: flutter build apk --debug
+      run: flutter build apk --debug  # You can change to --release if you want a release APK
 
     # Upload APK to GitHub folder "APK BUILDS"
     - name: Upload APK to APK BUILDS folder
       run: |
         mkdir -p APK_BUILDS
-        mv build/app/outputs/flutter-apk/app-release.apk APK_BUILDS/
+        mv build/app/outputs/flutter-apk/app-debug.apk APK_BUILDS/  # Ensure correct APK name is used for debug builds
 
     # Set up SSH for EC2
     - name: Setup SSH Key
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/github-actions-key  # Use the correct key name
-        chmod 600 ~/.ssh/github-actions-key  # Set correct permissions
+        echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/github-actions-key
+        chmod 600 ~/.ssh/github-actions-key
         ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
       env:
         EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
@@ -77,6 +77,6 @@ jobs:
     # Transfer APK to EC2 using SCP
     - name: Transfer APK to EC2 Server
       run: |
-        scp -i ~/.ssh/github-actions-key APK_BUILDS/app-release.apk ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/haider
+        scp -i ~/.ssh/github-actions-key APK_BUILDS/app-debug.apk ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }}:/home/ubuntu/haider
       env:
         EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
